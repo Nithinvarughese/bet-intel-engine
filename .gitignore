@@ -1,0 +1,27 @@
+# Environments
+.venv/
+venv/
+.env
+.python-version
+
+# Streamlit secrets (local credentials)
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Local database files (Docker volume bind-mount)
+postgres_data/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Jupyter
+.ipynb_checkpoints/

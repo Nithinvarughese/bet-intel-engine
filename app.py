@@ -183,6 +183,21 @@ st.markdown(
     .form-W { background: linear-gradient(135deg, #10b981 0%, #047857 100%); }
     .form-D { background: linear-gradient(135deg, #64748b 0%, #334155 100%); }
     .form-L { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); }
+
+    /* NEW: EV Glow Animation */
+    @keyframes glowPulse {
+        0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4); }
+        50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.8); border-color: rgba(16, 185, 129, 1); }
+        100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4); }
+    }
+    .ev-positive {
+        animation: glowPulse 2s infinite;
+        border-radius: 12px;
+        padding: 12px;
+        margin-top: 10px;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.5);
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -367,14 +382,17 @@ def simulate_season(teams, avg_h, avg_a, h_att, h_def, a_att, a_def):
 
 if 'portfolio' not in st.session_state:
     st.session_state['portfolio'] = []
+if 'bankroll' not in st.session_state:
+    st.session_state['bankroll'] = 1000.0
 
-def save_bet(match, selection, odds, prob, ev):
+def save_bet(match, selection, odds, prob, ev, recommended_wager_pct):
     st.session_state['portfolio'].append({
         "Match": match,
         "Selection": selection,
         "Odds": odds,
         "Model Prob": f"{prob:.1%}",
-        "EV (%)": round(ev * 100, 1)
+        "EV (%)": round(ev * 100, 1),
+        "Suggested Stake": f"${st.session_state['bankroll'] * recommended_wager_pct:.2f} ({recommended_wager_pct:.1%})"
     })
     st.toast(f"Saved {selection} bet to Portfolio!")
 
@@ -506,16 +524,21 @@ elif app_mode == "💰 Bet Portfolio":
         portfolio_df = pd.DataFrame(st.session_state['portfolio'])
         
         col_s1, col_s2, col_s3 = st.columns(3)
-        col_s1.metric("Total Bets Tracked", len(portfolio_df))
-        col_s2.metric("Avg Expected ROI", f"{portfolio_df['EV (%)'].mean():.1f}%")
+        col_s1.metric("Mock Bankroll", f"${st.session_state['bankroll']:,.2f}")
+        col_s2.metric("Total Bets Tracked", len(portfolio_df))
+        col_s3.metric("Avg Expected ROI", f"{portfolio_df['EV (%)'].mean():.1f}%")
         
         st.markdown('<h3 style="color:#f8fafc; font-weight:700; margin-top: 30px; margin-bottom: 10px;">My Saved Bets Ledger</h3>', unsafe_allow_html=True)
         st.dataframe(portfolio_df, hide_index=True, use_container_width=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🗑️ Clear Portfolio", type="secondary"):
-            st.session_state['portfolio'] = []
-            st.rerun()
+        col_btn1, col_btn2 = st.columns([1, 4])
+        with col_btn1:
+            if st.button("🗑️ Clear Portfolio", type="secondary"):
+                st.session_state['portfolio'] = []
+                st.rerun()
+        with col_btn2:
+            st.caption("Bets are sized according to the Kelly Criterion to maximize long-term bankroll growth.")
             
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
@@ -630,33 +653,33 @@ with st.expander("💰 Expected Value (EV) Analyzer", expanded=True):
     st.markdown('<h4 style="color:#f8fafc; font-weight:700; margin-bottom: 10px;">Find Value Bets</h4>', unsafe_allow_html=True)
     st.caption("Enter live bookmaker Decimal Odds below to calculate the Expected Value (EV) over the long run, comparing our model's probability against the bookie's implied probability.")
     
+    def render_ev_col(selection_name, prob, odds_val, odds_key, btn_key):
+        odds = st.number_input(f"{selection_name} Odds", min_value=1.01, value=odds_val, step=0.1, key=odds_key)
+        ev = (prob * odds) - 1
+        kelly = 0
+        if ev > 0:
+            b = odds - 1
+            kelly = max(0, (prob * b - (1 - prob)) / b)
+            st.markdown(f'''
+            <div class="ev-positive">
+                <div style="color: #10b981; font-weight: 800; font-size: 16px;">🔥 +EV Found! ({ev:+.1%} ROI)</div>
+                <div style="color: #cbd5e1; font-size: 13px; margin-top: 4px;">Kelly Stake: <b>{kelly:.1%}</b> (${st.session_state["bankroll"] * kelly:.2f})</div>
+            </div>
+            ''', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+        else:
+            st.error(f"Negative EV ({ev:+.1%} ROI)")
+            
+        if st.button(f"Track {selection_name}", key=btn_key): 
+            save_bet(f"{pred['home']} vs {pred['away']}", selection_name, odds, prob, ev, kelly)
+
     col_ev1, col_ev2, col_ev3 = st.columns(3)
     with col_ev1:
-        h_odds = st.number_input(f"{pred['home']} Win Odds", min_value=1.01, value=2.50, step=0.1, key="odd_h")
-        ev_h = (pred['h_win'] * h_odds) - 1
-        if ev_h > 0:
-            st.success(f"**+EV Found!** ({ev_h:+.1%} ROI)")
-        else:
-            st.error(f"Negative EV ({ev_h:+.1%} ROI)")
-        if st.button(f"Track {pred['home']}", key="btn_h"): save_bet(f"{pred['home']} vs {pred['away']}", pred['home'], h_odds, pred['h_win'], ev_h)
-            
+        render_ev_col(pred['home'], pred['h_win'], 2.50, "odd_h", "btn_h")
     with col_ev2:
-        d_odds = st.number_input(f"Draw Odds", min_value=1.01, value=3.20, step=0.1, key="odd_d")
-        ev_d = (pred['draw'] * d_odds) - 1
-        if ev_d > 0:
-            st.success(f"**+EV Found!** ({ev_d:+.1%} ROI)")
-        else:
-            st.error(f"Negative EV ({ev_d:+.1%} ROI)")
-        if st.button(f"Track Draw", key="btn_d"): save_bet(f"{pred['home']} vs {pred['away']}", "Draw", d_odds, pred['draw'], ev_d)
-            
+        render_ev_col("Draw", pred['draw'], 3.20, "odd_d", "btn_d")
     with col_ev3:
-        a_odds = st.number_input(f"{pred['away']} Win Odds", min_value=1.01, value=2.80, step=0.1, key="odd_a")
-        ev_a = (pred['a_win'] * a_odds) - 1
-        if ev_a > 0:
-            st.success(f"**+EV Found!** ({ev_a:+.1%} ROI)")
-        else:
-            st.error(f"Negative EV ({ev_a:+.1%} ROI)")
-        if st.button(f"Track {pred['away']}", key="btn_a"): save_bet(f"{pred['home']} vs {pred['away']}", pred['away'], a_odds, pred['a_win'], ev_a)
+        render_ev_col(pred['away'], pred['a_win'], 2.80, "odd_a", "btn_a")
 
 st.divider()
 st.caption("Stack: Streamlit · Plotly · pandas · SciPy (Poisson) · PostgreSQL · SQLAlchemy")

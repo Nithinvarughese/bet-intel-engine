@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from sqlalchemy import text
 
@@ -123,10 +124,6 @@ def get_h2h_matches(team_a: str, team_b: str, league_id: int, limit: int = 5):
 
 
 def get_league_averages_full(league_id: int = 39):
-    """
-    Aggregate attack/defense indices for one competition.
-    Rows are filtered by API `league_id` (not display name), so it matches ingest reliably.
-    """
     q = text(
         """
         SELECT * FROM matches
@@ -139,12 +136,32 @@ def get_league_averages_full(league_id: int = 39):
         empty_series = pd.Series(dtype=float)
         return 0.0, 0.0, empty_series, empty_series, empty_series, empty_series
 
-    avg_h, avg_a = df["home_goals"].mean(), df["away_goals"].mean()
+    # Calculate Time Decay Factors (Recency Bias)
+    # Matches that happened closer to the latest match receive higher weight.
+    df['match_date'] = pd.to_datetime(df['match_date'])
+    max_date = df['match_date'].max()
+    df['days_ago'] = (max_date - df['match_date']).dt.days
+    
+    # Exponential decay: e.g., halving roughly every 60 days
+    df['weight'] = np.exp(-df['days_ago'] / 90.0)
 
-    h_att = df.groupby("home_team")["home_goals"].mean() / avg_h
-    h_def = df.groupby("home_team")["away_goals"].mean() / avg_a
-    a_att = df.groupby("away_team")["away_goals"].mean() / avg_a
-    a_def = df.groupby("away_team")["home_goals"].mean() / avg_h
+    # Weighted league averages
+    total_weight = df['weight'].sum()
+    if total_weight == 0:
+        total_weight = 1.0  # fallback
+        
+    avg_h = (df["home_goals"] * df["weight"]).sum() / total_weight
+    avg_a = (df["away_goals"] * df["weight"]).sum() / total_weight
+
+    def weighted_mean(group, col):
+        w_sum = group['weight'].sum()
+        if w_sum == 0: return 0.0
+        return (group[col] * group['weight']).sum() / w_sum
+
+    h_att = df.groupby("home_team").apply(lambda x: weighted_mean(x, "home_goals")) / avg_h
+    h_def = df.groupby("home_team").apply(lambda x: weighted_mean(x, "away_goals")) / avg_a
+    a_att = df.groupby("away_team").apply(lambda x: weighted_mean(x, "away_goals")) / avg_a
+    a_def = df.groupby("away_team").apply(lambda x: weighted_mean(x, "home_goals")) / avg_h
 
     return avg_h, avg_a, h_att, h_def, a_att, a_def
 

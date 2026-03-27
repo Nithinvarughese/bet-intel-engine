@@ -88,18 +88,23 @@ st.markdown(
     }
     .main-title {
         text-align: center;
-        background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8);
+        background: -webkit-linear-gradient(45deg, #f8fafc, #cbd5e1);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 900;
-        font-size: 3.5rem;
-        margin-bottom: -10px;
+        font-size: 4rem;
+        letter-spacing: -1.5px;
+        margin-bottom: 5px;
+        text-transform: uppercase;
     }
     .sub-title {
         text-align: center;
-        color: #94a3b8;
+        color: #64748b;
         font-size: 1.1rem;
-        margin-bottom: 30px;
+        font-weight: 600;
+        margin-bottom: 40px;
+        text-transform: uppercase;
+        letter-spacing: 3px;
     }
     </style>
     """,
@@ -236,42 +241,36 @@ if "match_pred" not in st.session_state:
         "a_win": aw,
     }
 
-st.sidebar.markdown(
-    """
-    <div style="text-align: center; margin-bottom: 20px;">
-        <img src="https://upload.wikimedia.org/wikipedia/en/thumb/f/f2/Premier_League_Logo.svg/1024px-Premier_League_Logo.svg.png" width="120" style="filter: brightness(0.9) drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
-    </div>
-    """, unsafe_allow_html=True
-)
-st.sidebar.header("Match setup")
-home_team = st.sidebar.selectbox(
-    "Home team",
-    teams,
-    index=team_index(teams, st.session_state["match_pred"]["home"]),
-    key="sb_home",
-)
-away_team = st.sidebar.selectbox(
-    "Away team",
-    teams,
-    index=team_index(teams, st.session_state["match_pred"]["away"]),
-    key="sb_away",
-)
+st.markdown('<h1 class="main-title">BET INTEL</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">PREDICTIVE ANALYTICS ENGINE</p>', unsafe_allow_html=True)
 
-if st.sidebar.button("Run simulation", type="primary", use_container_width=True):
-    with st.spinner("Computing match probabilities…"):
-        hw, d, aw = predict_match(home_team, away_team, avg_h, avg_a, h_att, h_def, a_att, a_def)
-    st.session_state["match_pred"] = {
-        "home": home_team,
-        "away": away_team,
-        "h_win": hw,
-        "draw": d,
-        "a_win": aw,
-    }
+st.markdown("""
+<div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 25px 30px; border-radius: 16px; border: 1px solid #334155; margin-bottom: 35px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);">
+""", unsafe_allow_html=True)
+
+c_home, c_vs, c_away, c_btn = st.columns([3, 1, 3, 2])
+with c_home:
+    home_team = st.selectbox("Home Team", teams, index=team_index(teams, st.session_state["match_pred"]["home"]), key="sb_home")
+with c_vs:
+    st.markdown('<div style="text-align:center; font-size: 18px; font-weight:800; margin-top:32px; color:#64748b;">VS</div>', unsafe_allow_html=True)
+with c_away:
+    away_team = st.selectbox("Away Team", teams, index=team_index(teams, st.session_state["match_pred"]["away"]), key="sb_away")
+with c_btn:
+    st.markdown('<div style="margin-top:28px;"></div>', unsafe_allow_html=True)
+    if st.button("RUN SIMULATION", type="primary", use_container_width=True):
+        with st.spinner("Computing match probabilities…"):
+            hw, d, aw = predict_match(home_team, away_team, avg_h, avg_a, h_att, h_def, a_att, a_def)
+        st.session_state["match_pred"] = {
+            "home": home_team,
+            "away": away_team,
+            "h_win": hw,
+            "draw": d,
+            "a_win": aw,
+        }
+
+st.markdown("</div>", unsafe_allow_html=True)
 
 pred = st.session_state["match_pred"]
-
-st.markdown('<h1 class="main-title">Bet Intel</h1>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">Educational demo: Poisson-based 1X2 probabilities from completed-match data <br>(Premier League–style season in PostgreSQL).</p>', unsafe_allow_html=True)
 
 tab_overview, tab_sim, tab_chart, tab_method = st.tabs(
     ["Overview", "Simulation", "League chart", "Methodology"]
@@ -294,7 +293,7 @@ with tab_overview:
 with tab_sim:
     st.subheader("Match outcome")
     if home_team != pred["home"] or away_team != pred["away"]:
-        st.warning("Sidebar teams differ from the last run. Click **Run simulation** in the sidebar to refresh.")
+        st.warning("Selected teams differ from the displayed simulation. Click **RUN SIMULATION** to update.")
     
     st.markdown('<div class="match-card">', unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 1, 1])

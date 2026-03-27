@@ -63,6 +63,7 @@ MANUAL_TEAM_LOGO_URL: dict[int, dict[str, str]] = {
         "Cádiz": "https://r2.thesportsdb.com/images/media/team/badge/e2phzp1639408503.png",
         "Las Palmas": "https://r2.thesportsdb.com/images/media/team/badge/mmhyb11616443601.png",
         "Granada": "https://r2.thesportsdb.com/images/media/team/badge/f9iss11677472689.png",
+        "Granada CF": "https://r2.thesportsdb.com/images/media/team/badge/f9iss11677472689.png",
         "Almeria": "https://r2.thesportsdb.com/images/media/team/badge/yswsww1473503818.png",
         "Almería": "https://r2.thesportsdb.com/images/media/team/badge/yswsww1473503818.png",
     },
@@ -166,7 +167,11 @@ TEAM_NAME_ALIASES: dict[int, dict[str, str]] = {
     },
     140: {
         "deportivo alaves": "Alaves",
+        "deportivo alavés": "Alaves",
         "club atletico de madrid": "Atletico Madrid",
+        "granada cf": "Granada CF",
+        "ud almeria": "Almeria",
+        "ud almería": "Almeria",
     },
     135: {
         "internazionale": "Inter",

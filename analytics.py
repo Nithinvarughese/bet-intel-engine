@@ -166,6 +166,17 @@ def get_league_averages_full(league_id: int = 39):
     return avg_h, avg_a, h_att, h_def, a_att, a_def
 
 
+def get_last_refresh_timestamp(league_id: int):
+    """
+    Returns the most recent match_date (finished only) for a competition
+    to show the user how 'fresh' the underlying model data is.
+    """
+    q = text("SELECT MAX(match_date) FROM matches WHERE status = 'FT' AND league_id = :lid")
+    with engine.connect() as conn:
+        res = conn.execute(q, {"lid": league_id}).scalar()
+    return res
+
+
 if __name__ == "__main__":
     import sys
 

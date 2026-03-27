@@ -6,9 +6,104 @@ from analytics import get_league_averages_full, predict_match
 
 st.set_page_config(
     page_title="Bet Intel | Football analytics demo",
-    page_icon="📊",
+    page_icon="⚽",
     layout="wide",
     initial_sidebar_state="expanded",
+)
+
+TEAM_LOGOS = {
+    "Arsenal": "https://r2.thesportsdb.com/images/media/team/badge/uyhbfe1612467038.png",
+    "Aston Villa": "https://r2.thesportsdb.com/images/media/team/badge/jykrpv1717309891.png",
+    "Bournemouth": "https://r2.thesportsdb.com/images/media/team/badge/y08nak1534071116.png",
+    "Brentford": "https://r2.thesportsdb.com/images/media/team/badge/grv1aw1546453779.png",
+    "Brighton": "https://upload.wikimedia.org/wikipedia/en/thumb/f/fd/Brighton_%26_Hove_Albion_logo.svg/1024px-Brighton_%26_Hove_Albion_logo.svg.png",
+    "Burnley": "https://r2.thesportsdb.com/images/media/team/badge/ql7nl31686893820.png",
+    "Chelsea": "https://r2.thesportsdb.com/images/media/team/badge/yvwvtu1448813215.png",
+    "Crystal Palace": "https://r2.thesportsdb.com/images/media/team/badge/ia6i3m1656014992.png",
+    "Everton": "https://r2.thesportsdb.com/images/media/team/badge/eqayrf1523184794.png",
+    "Fulham": "https://r2.thesportsdb.com/images/media/team/badge/xwwvyt1448811086.png",
+    "Liverpool": "https://r2.thesportsdb.com/images/media/team/badge/kfaher1737969724.png",
+    "Luton": "https://r2.thesportsdb.com/images/media/team/badge/v977eh1681319466.png",
+    "Manchester City": "https://r2.thesportsdb.com/images/media/team/badge/vwpvry1467462651.png",
+    "Manchester United": "https://r2.thesportsdb.com/images/media/team/badge/xzqdr11517660252.png",
+    "Newcastle": "https://r2.thesportsdb.com/images/media/team/badge/aes2o51646347790.png",
+    "Nottingham Forest": "https://r2.thesportsdb.com/images/media/team/badge/bk4qjs1546440351.png",
+    "Sheffield Utd": "https://r2.thesportsdb.com/images/media/team/badge/w7f8pj1672950689.png",
+    "Tottenham": "https://r2.thesportsdb.com/images/media/team/badge/dfyfhl1604094109.png",
+    "West Ham": "https://r2.thesportsdb.com/images/media/team/badge/yutyxs1467459956.png",
+    "Wolves": "https://r2.thesportsdb.com/images/media/team/badge/saimjk1656789616.png"
+}
+
+st.markdown(
+    """
+    <style>
+    .team-logo {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        height: 120px;
+        filter: drop-shadow(0px 8px 12px rgba(0, 0, 0, 0.4));
+        transition: transform 0.3s ease;
+    }
+    .team-logo:hover {
+        transform: scale(1.05);
+    }
+    .team-name {
+        text-align: center;
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 15px;
+        color: #f8fafc;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    .prob-val {
+        text-align: center;
+        font-size: 48px;
+        font-weight: 800;
+        margin-top: -10px;
+        text-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    .prob-home { color: #22d3ee; }
+    .prob-draw { color: #94a3b8; font-size: 32px; padding-top: 10px; }
+    .prob-away { color: #0ea5e9; }
+    .prob-label {
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-size: 14px;
+        color: #94a3b8;
+        margin-top: -10px;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+    .match-card {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border-radius: 20px;
+        padding: 30px 24px;
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+        margin-top: 20px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(255,255,255,0.05);
+        color: white;
+    }
+    .main-title {
+        text-align: center;
+        background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 900;
+        font-size: 3.5rem;
+        margin-bottom: -10px;
+    }
+    .sub-title {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 1.1rem;
+        margin-bottom: 30px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 
@@ -141,6 +236,13 @@ if "match_pred" not in st.session_state:
         "a_win": aw,
     }
 
+st.sidebar.markdown(
+    """
+    <div style="text-align: center; margin-bottom: 20px;">
+        <img src="https://upload.wikimedia.org/wikipedia/en/thumb/f/f2/Premier_League_Logo.svg/1024px-Premier_League_Logo.svg.png" width="120" style="filter: brightness(0.9) drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+    </div>
+    """, unsafe_allow_html=True
+)
 st.sidebar.header("Match setup")
 home_team = st.sidebar.selectbox(
     "Home team",
@@ -168,11 +270,8 @@ if st.sidebar.button("Run simulation", type="primary", use_container_width=True)
 
 pred = st.session_state["match_pred"]
 
-st.title("Bet Intel")
-st.caption(
-    "Educational demo: Poisson-based 1X2 probabilities from completed-match data "
-    "(Premier League–style season in PostgreSQL)."
-)
+st.markdown('<h1 class="main-title">Bet Intel</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">Educational demo: Poisson-based 1X2 probabilities from completed-match data <br>(Premier League–style season in PostgreSQL).</p>', unsafe_allow_html=True)
 
 tab_overview, tab_sim, tab_chart, tab_method = st.tabs(
     ["Overview", "Simulation", "League chart", "Methodology"]
@@ -195,11 +294,32 @@ with tab_overview:
 with tab_sim:
     st.subheader("Match outcome")
     if home_team != pred["home"] or away_team != pred["away"]:
-        st.info("Sidebar teams differ from the last run. Click **Run simulation** in the sidebar to refresh.")
-    c1, c2, c3 = st.columns(3)
-    c1.metric(pred["home"], f"{pred['h_win']:.1%}", help="Estimated probability of a home win")
-    c2.metric("Draw", f"{pred['draw']:.1%}", help="Estimated probability of a draw")
-    c3.metric(pred["away"], f"{pred['a_win']:.1%}", help="Estimated probability of an away win")
+        st.warning("Sidebar teams differ from the last run. Click **Run simulation** in the sidebar to refresh.")
+    
+    st.markdown('<div class="match-card">', unsafe_allow_html=True)
+    c1, c2, c3 = st.columns([1, 1, 1])
+    
+    with c1:
+        img_url = TEAM_LOGOS.get(pred["home"], "https://upload.wikimedia.org/wikipedia/commons/e/e6/Football_logo.png")
+        st.markdown(f'<img src="{img_url}" class="team-logo">', unsafe_allow_html=True)
+        st.markdown(f'<div class="team-name">{pred["home"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="prob-val prob-home">{pred["h_win"]:.1%}</div>', unsafe_allow_html=True)
+        st.markdown('<div class="prob-label">Win Probability</div>', unsafe_allow_html=True)
+        
+    with c2:
+        st.markdown('<div style="height: 60px;"></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="team-name" style="color: #64748b;">DRAW</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="prob-val prob-draw">{pred["draw"]:.1%}</div>', unsafe_allow_html=True)
+        st.markdown('<div class="prob-label">Probability</div>', unsafe_allow_html=True)
+        
+    with c3:
+        img_url = TEAM_LOGOS.get(pred["away"], "https://upload.wikimedia.org/wikipedia/commons/e/e6/Football_logo.png")
+        st.markdown(f'<img src="{img_url}" class="team-logo">', unsafe_allow_html=True)
+        st.markdown(f'<div class="team-name">{pred["away"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="prob-val prob-away">{pred["a_win"]:.1%}</div>', unsafe_allow_html=True)
+        st.markdown('<div class="prob-label">Win Probability</div>', unsafe_allow_html=True)
+        
+    st.markdown('</div>', unsafe_allow_html=True)
 
     total_p = pred["h_win"] + pred["draw"] + pred["a_win"]
     st.caption(

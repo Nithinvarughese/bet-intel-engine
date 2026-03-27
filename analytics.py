@@ -63,6 +63,41 @@ def predict_match(home_team, away_team, avg_h, avg_a, h_att, h_def, a_att, a_def
         "exp_away": exp_away_goals
     }
 
+def get_team_form(team_name, limit=5):
+    query = f"""
+    SELECT match_date, home_team, away_team, home_goals, away_goals 
+    FROM matches 
+    WHERE (home_team = '{team_name}' OR away_team = '{team_name}')
+    AND status = 'FT'
+    ORDER BY match_date DESC
+    LIMIT {limit}
+    """
+    df = pd.read_sql(query, engine)
+    
+    form = []
+    for _, row in df.iterrows():
+        if row['home_team'] == team_name:
+            if row['home_goals'] > row['away_goals']: form.append('W')
+            elif row['home_goals'] == row['away_goals']: form.append('D')
+            else: form.append('L')
+        else:
+            if row['away_goals'] > row['home_goals']: form.append('W')
+            elif row['away_goals'] == row['home_goals']: form.append('D')
+            else: form.append('L')
+    return form
+
+def get_h2h_matches(team_a, team_b, limit=5):
+    query = f"""
+    SELECT match_date, home_team, away_team, home_goals, away_goals 
+    FROM matches 
+    WHERE ((home_team = '{team_a}' AND away_team = '{team_b}') 
+       OR (home_team = '{team_b}' AND away_team = '{team_a}'))
+    AND status = 'FT'
+    ORDER BY match_date DESC
+    LIMIT {limit}
+    """
+    return pd.read_sql(query, engine)
+
 # --- Updated get_league_averages to include all 4 metrics ---
 def get_league_averages_full():
     df = pd.read_sql("SELECT * FROM matches WHERE status = 'FT'", engine)

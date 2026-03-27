@@ -38,18 +38,19 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;900&display=swap');
 
     :root {
-        --surface-0: #0b1120;
-        --surface-1: rgba(15, 23, 42, 0.8);
-        --surface-2: rgba(30, 41, 59, 0.7);
-        --border-subtle: rgba(255, 255, 255, 0.08);
-        --text-primary: #f8fafc;
-        --text-muted: #94a3b8;
-        --text-dim: #64748b;
-        --accent: #38bdf8;
-        --accent-glow: rgba(56, 189, 248, 0.3);
+        --surface-0: #080612;
+        --surface-1: rgba(18, 12, 38, 0.85);
+        --surface-2: rgba(32, 20, 60, 0.75);
+        --border-subtle: rgba(255, 255, 255, 0.07);
+        --text-primary: #faf5ff;
+        --text-muted: #c4b5fd;
+        --text-dim: #7c6fa0;
+        --accent: #f59e0b;
+        --accent-glow: rgba(245, 158, 11, 0.35);
+        --accent2: #a78bfa;
         --radius: 12px;
-        --shadow-1: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-        --shadow-2: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        --shadow-1: 0 10px 20px -4px rgba(0, 0, 0, 0.5);
+        --shadow-2: 0 30px 60px -15px rgba(0, 0, 0, 0.7);
         --max-width: 1320px;
     }
 
@@ -75,7 +76,9 @@ st.markdown(
 
     [data-testid="stAppViewContainer"] {
         background-color: var(--surface-0);
-        background-image: radial-gradient(at 0% 0%, #111827 0, transparent 50%);
+        background-image:
+            radial-gradient(ellipse at 20% 0%, rgba(109, 40, 217, 0.25) 0, transparent 50%),
+            radial-gradient(ellipse at 80% 100%, rgba(245, 158, 11, 0.12) 0, transparent 50%);
         background-attachment: fixed;
     }
 
@@ -89,7 +92,7 @@ st.markdown(
         font-weight: 900;
         margin-bottom: 4px;
         letter-spacing: -4px;
-        background: linear-gradient(135deg, #fff 40%, var(--text-muted));
+        background: linear-gradient(135deg, #fff 30%, #a78bfa 70%, #f59e0b);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         line-height: 1;
@@ -120,8 +123,8 @@ st.markdown(
         margin-bottom: 24px;
     }
     .card-elevated {
-        background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
-        border: 1px solid rgba(255,255,255,0.1);
+        background: linear-gradient(145deg, rgba(32, 20, 60, 0.85) 0%, rgba(15, 10, 35, 0.95) 100%);
+        border: 1px solid rgba(167, 139, 250, 0.15);
         border-radius: 24px;
         padding: 40px 32px;
         box-shadow: var(--shadow-2);
@@ -133,14 +136,14 @@ st.markdown(
         content: "";
         position: absolute;
         top: 0; left: 0; right: 0; height: 1.5px;
-        background: linear-gradient(90deg, transparent, var(--accent), transparent);
-        opacity: 0.6;
+        background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+        opacity: 0.8;
     }
     .card-elevated::after {
         content: "";
         position: absolute;
         top: 0; left: 0; width: 100%; height: 100%;
-        background: radial-gradient(circle at 50% -20%, rgba(56, 189, 248, 0.1), transparent 70%);
+        background: radial-gradient(circle at 50% -10%, rgba(109, 40, 217, 0.12), transparent 65%);
         pointer-events: none;
     }
 
@@ -247,9 +250,9 @@ st.markdown(
         font-variant-numeric: tabular-nums;
         font-feature-settings: "tnum";
     }
-    .prob-h { color: #38bdf8; text-shadow: 0 0 30px rgba(56,189,248,0.45); }
-    .prob-d { color: #94a3b8; font-size: 2.2rem; }
-    .prob-a { color: #a78bfa; text-shadow: 0 0 30px rgba(167,139,250,0.45); }
+    .prob-h { color: #f59e0b; text-shadow: 0 0 32px rgba(245,158,11,0.55); }
+    .prob-d { color: #a78bfa; font-size: 2.2rem; }
+    .prob-a { color: #c084fc; text-shadow: 0 0 32px rgba(192,132,252,0.55); }
     .prob-label {
         font-size: 0.65rem;
         text-transform: uppercase;
@@ -389,11 +392,11 @@ def score_heatmap(score_matrix, home, away):
     fig = px.imshow(score_matrix, 
                     labels=dict(x=f"{away} Goals", y=f"{home} Goals", color="Probability"),
                     x=[str(i) for i in range(6)], y=[str(i) for i in range(6)],
-                    color_continuous_scale="Teal", text_auto=".1%")
+                    color_continuous_scale="Purp", text_auto=".1%")
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#cbd5e1"),
+        font=dict(color="#c4b5fd"),
         height=380, margin=dict(t=20, b=20, l=20, r=20)
     )
     fig.update_xaxes(side="top")
@@ -405,14 +408,14 @@ def outcome_donut(h_win: float, draw: float, a_win: float, home: str, away: str)
         labels=[f"{home}", "Draw", f"{away}"],
         values=[h_win, draw, a_win],
         hole=.65,
-        marker=dict(colors=["#22d3ee", "#64748b", "#0ea5e9"], line=dict(color='#0f172a', width=3)),
+        marker=dict(colors=["#f59e0b", "#6d28d9", "#c084fc"], line=dict(color='#080612', width=3)),
         textinfo='percent',
         hoverinfo='label+percent',
         textfont=dict(size=18, color="white")
     )])
     fig.update_layout(
         showlegend=True,
-        legend=dict(orientation="h", yanchor="top", y=-0.1, xanchor="center", x=0.5, font=dict(color="#cbd5e1", size=14)),
+        legend=dict(orientation="h", yanchor="top", y=-0.1, xanchor="center", x=0.5, font=dict(color="#c4b5fd", size=14)),
         margin=dict(t=30, b=30, l=20, r=20),
     )
     return apply_theme(fig)
@@ -591,31 +594,111 @@ if app_mode == "📊 League Insights":
     st.stop()
 
 elif app_mode == "🔮 Season Simulator":
-    st.markdown('<h1 class="main-title">SEASON SIMULATOR</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-title">Expected Points Engine</p>', unsafe_allow_html=True)
-    
-    with st.spinner("Simulating the entire 38-game season (380 Matches)..."):
+    st.markdown('''
+        <div class="hero-container" style="padding: 40px 0 20px 0;">
+            <div class="hero-title" style="font-size:3.5rem;">SEASON SIMULATOR</div>
+            <div class="hero-subtitle">POISSON EXPECTED POINTS ENGINE</div>
+            <div class="hero-rule"></div>
+        </div>
+    ''', unsafe_allow_html=True)
+
+    with st.spinner("Simulating full 38-game season…"):
         sim_df = simulate_season(teams, avg_h, avg_a, h_att, h_def, a_att, a_def)
-    
-    st.markdown('<div class="match-card">', unsafe_allow_html=True)
-    st.markdown('<h3 style="color:#f8fafc; font-weight:700; margin-bottom: 10px;">Projected Final League Table</h3>', unsafe_allow_html=True)
-    st.caption("Based on cumulative Expected Points (xPts) for every single home and away permutation utilizing our Poisson mathematical distribution engine.")
-    
+
+    team_logo_map_sim = cached_team_logo_map(selected_league_id)
     sim_df.index = sim_df.index + 1
     sim_df["Expected Points"] = sim_df["Expected Points"].round(1)
-    
-    st.dataframe(
-        sim_df, 
-        use_container_width=True, 
-        height=600,
-        column_config={
-            "Team": st.column_config.TextColumn("Club"),
-            "Expected Points": st.column_config.ProgressColumn(
-                 "Projected xPTS", min_value=0, max_value=114, format="%.1f"
-            )
-        }
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
+    max_pts = sim_df["Expected Points"].max()
+
+    # Medal styles for top-3
+    RANK_STYLES = {
+        1: ("🥇", "#f59e0b", "rgba(245,158,11,0.12)", "rgba(245,158,11,0.3)"),
+        2: ("🥈", "#94a3b8", "rgba(148,163,184,0.08)", "rgba(148,163,184,0.2)"),
+        3: ("🥉", "#a16207", "rgba(161,98,7,0.08)", "rgba(161,98,7,0.2)"),
+    }
+
+    # Build rows HTML
+    rows_html = ""
+    for rank, row in sim_df.iterrows():
+        team_name = row["Team"]
+        xpts = row["Expected Points"]
+        pct = xpts / max_pts * 100
+
+        # Get logo as base64
+        logo_html = ""
+        manual = resolve_manual_team_logo_url(selected_league_id, team_name)
+        blob = None
+        if manual:
+            blob = cached_image_bytes_from_url(manual)
+        if not blob:
+            tid = resolve_team_id(team_name, team_logo_map_sim)
+            if tid is not None:
+                blob = cached_team_logo_png(int(tid))
+        if blob:
+            mime = _image_blob_mime(blob)
+            b64 = base64.b64encode(blob).decode("ascii")
+            logo_html = f'<img src="data:{mime};base64,{b64}" style="width:32px;height:32px;object-fit:contain;vertical-align:middle;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5));" />'
+
+        medal, accent, row_bg, bar_color = RANK_STYLES.get(rank, ("", "var(--text-dim)", "transparent", "rgba(167,139,250,0.25)"))
+        rank_cell = f'<span style="font-size:1.1rem;">{medal}</span>' if medal else f'<span style="font-size:0.9rem;font-weight:800;color:var(--text-dim);">{rank}</span>'
+
+        # CL / relegation zone hint
+        zone_dot = ""
+        if rank <= 4:
+            zone_dot = '<span style="display:inline-block;width:6px;height:6px;background:#f59e0b;border-radius:50%;margin-left:6px;vertical-align:middle;"></span>'
+        elif rank >= len(sim_df) - 2:
+            zone_dot = '<span style="display:inline-block;width:6px;height:6px;background:#ef4444;border-radius:50%;margin-left:6px;vertical-align:middle;"></span>'
+
+        rows_html += f'''
+        <tr style="background:{row_bg}; transition: background 0.2s;">
+            <td style="width:50px;text-align:center;padding:12px 8px;">{rank_cell}</td>
+            <td style="padding:12px 12px 12px 4px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    {logo_html}
+                    <span style="font-weight:700;color:var(--text-primary);font-family:'Outfit',sans-serif;font-size:1rem;">{html.escape(team_name)}</span>
+                    {zone_dot}
+                </div>
+            </td>
+            <td style="width:260px;padding:12px 16px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.06);">
+                        <div style="width:{pct:.1f}%;height:100%;border-radius:3px;background:linear-gradient(90deg,{accent},{bar_color});transition:width 0.6s ease;"></div>
+                    </div>
+                    <span style="font-size:1.1rem;font-weight:900;color:{accent};font-family:'Outfit',sans-serif;font-variant-numeric:tabular-nums;min-width:38px;text-align:right;">{xpts}</span>
+                </div>
+            </td>
+        </tr>'''
+
+    # Legend
+    legend = '''
+    <div style="display:flex;gap:20px;margin-top:20px;font-size:0.7rem;color:var(--text-dim);">
+        <span><span style="display:inline-block;width:8px;height:8px;background:#f59e0b;border-radius:50%;margin-right:4px;vertical-align:middle;"></span>Champions League Zone</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:#ef4444;border-radius:50%;margin-right:4px;vertical-align:middle;"></span>Relegation Zone</span>
+        <span style="margin-left:auto;">xPTS = Expected Points (Poisson model, 380 fixtures)</span>
+    </div>'''
+
+    table_html = f'''
+    <div style="background:linear-gradient(145deg,rgba(32,20,60,0.85),rgba(15,10,35,0.95));border:1px solid rgba(167,139,250,0.15);border-radius:20px;padding:28px;box-shadow:0 30px 60px -15px rgba(0,0,0,0.7);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <div style="font-family:Outfit,sans-serif;font-size:1.15rem;font-weight:800;color:var(--text-primary);">Projected Final Standings</div>
+            <div style="font-size:0.75rem;color:var(--text-dim);letter-spacing:1px;">38 GAME SEASON · xPTS</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+                    <th style="padding:6px 8px;font-size:0.65rem;color:var(--text-dim);text-align:center;font-weight:700;letter-spacing:1.5px;">#</th>
+                    <th style="padding:6px 12px;font-size:0.65rem;color:var(--text-dim);text-align:left;font-weight:700;letter-spacing:1.5px;">CLUB</th>
+                    <th style="padding:6px 16px;font-size:0.65rem;color:var(--text-dim);text-align:left;font-weight:700;letter-spacing:1.5px;">xPTS</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows_html}
+            </tbody>
+        </table>
+        {legend}
+    </div>'''
+
+    st.html(table_html)
     st.stop()
 
 elif app_mode == "💰 Bet Portfolio":

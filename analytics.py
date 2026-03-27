@@ -33,14 +33,35 @@ def predict_match(home_team, away_team, avg_h, avg_a, h_att, h_def, a_att, a_def
     draw = 0
     away_win = 0
     
+    score_matrix = [[0]*6 for _ in range(6)]
+    btts_prob = 0
+    over_25 = 0
+    under_25 = 0
+    
     for h in range(6):
         for a in range(6):
             prob = home_probs[h] * away_probs[a]
+            score_matrix[h][a] = prob
+            
             if h > a: home_win += prob
             elif h == a: draw += prob
             else: away_win += prob
             
-    return home_win, draw, away_win
+            if h > 0 and a > 0: btts_prob += prob
+            if h + a > 2.5: over_25 += prob
+            else: under_25 += prob
+            
+    return {
+        "h_win": home_win,
+        "draw": draw,
+        "a_win": away_win,
+        "btts": btts_prob,
+        "over_25": over_25,
+        "under_25": under_25,
+        "score_matrix": score_matrix,
+        "exp_home": exp_home_goals,
+        "exp_away": exp_away_goals
+    }
 
 # --- Updated get_league_averages to include all 4 metrics ---
 def get_league_averages_full():
@@ -65,11 +86,9 @@ if __name__ == "__main__":
         print(h_att.sort_values(ascending=False).head(5))
     else:
         avg_h, avg_a, h_att, h_def, a_att, a_def = get_league_averages_full()
-        h_win, d, a_win = predict_match(
-            "Arsenal", "Chelsea", avg_h, avg_a, h_att, h_def, a_att, a_def
-        )
+        preds = predict_match("Arsenal", "Chelsea", avg_h, avg_a, h_att, h_def, a_att, a_def)
         print("\nSample prediction: Arsenal vs Chelsea")
-        print(f"  Home win: {h_win:.2%}")
-        print(f"  Draw: {d:.2%}")
-        print(f"  Away win: {a_win:.2%}")
+        print(f"  Home win: {preds['h_win']:.2%}")
+        print(f"  Draw: {preds['draw']:.2%}")
+        print(f"  Away win: {preds['a_win']:.2%}")
         print("\n(Run with `python analytics.py summary` for league averages snippet.)")

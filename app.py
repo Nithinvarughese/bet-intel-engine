@@ -543,13 +543,17 @@ st.markdown(
 )
 
 
+# Bump when analytics/ingest semantics change so users are not stuck with stale empty cache.
+_LEAGUE_DATA_REVISION = 3
+
+
 @st.cache_data(ttl=3600, show_spinner="Loading league statistics…")
-def load_league(league_id: int):
+def load_league(league_id: int, _data_revision: int = _LEAGUE_DATA_REVISION):
     return get_league_averages_full(league_id)
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def cached_team_logo_map(league_id: int):
+def cached_team_logo_map(league_id: int, _data_revision: int = _LEAGUE_DATA_REVISION):
     return build_team_logo_map(league_id)
 
 
@@ -782,7 +786,8 @@ avg_h, avg_a, h_att, h_def, a_att, a_def = load_league(selected_league_id)
 if h_att.empty:
     st.error(
         f"⚠️ **No finished matches for {league_label}** (league id `{selected_league_id}`). "
-        "Add `FOOTBALL_API_KEY` to `.env`, then run **`python ingest.py`** once so rows get `league_id` populated."
+        "Run **`python ingest.py`** once with `FOOTBALL_API_KEY` and the **same** `DATABASE_URL` this app uses. "
+        "If you already ingested: open the **⋮** menu → **Clear cache**, then **Rerun** (Streamlit may still be serving an old empty result)."
     )
     st.stop()
 

@@ -5,9 +5,12 @@ from sqlalchemy import text
 from database import get_engine
 from scipy.stats import poisson
 
+# API-Football `fixture.status.short` — full-time and other completed outcomes
+_FINISHED_SQL = "status IN ('FT', 'AET', 'PEN', 'AWD')"
+
 
 def get_league_averages():
-    df = pd.read_sql(text("SELECT * FROM matches WHERE status = 'FT'"), get_engine())
+    df = pd.read_sql(text(f"SELECT * FROM matches WHERE {_FINISHED_SQL}"), get_engine())
 
     avg_home_goals = df["home_goals"].mean()
     avg_away_goals = df["away_goals"].mean()
@@ -68,11 +71,11 @@ def predict_match(home_team, away_team, avg_h, avg_a, h_att, h_def, a_att, a_def
 
 def get_team_form(team_name: str, league_id: int, limit: int = 5):
     q = text(
-        """
+        f"""
         SELECT match_date, home_team, away_team, home_goals, away_goals
         FROM matches
         WHERE (home_team = :team OR away_team = :team)
-          AND status = 'FT'
+          AND {_FINISHED_SQL}
           AND league_id = :league_id
         ORDER BY match_date DESC
         LIMIT :limit
@@ -103,14 +106,14 @@ def get_team_form(team_name: str, league_id: int, limit: int = 5):
 
 def get_h2h_matches(team_a: str, team_b: str, league_id: int, limit: int = 5):
     q = text(
-        """
+        f"""
         SELECT match_date, home_team, away_team, home_goals, away_goals
         FROM matches
         WHERE (
             (home_team = :a AND away_team = :b)
             OR (home_team = :b AND away_team = :a)
         )
-        AND status = 'FT'
+        AND {_FINISHED_SQL}
         AND league_id = :league_id
         ORDER BY match_date DESC
         LIMIT :limit
@@ -125,9 +128,9 @@ def get_h2h_matches(team_a: str, team_b: str, league_id: int, limit: int = 5):
 
 def get_league_averages_full(league_id: int = 39):
     q = text(
-        """
+        f"""
         SELECT * FROM matches
-        WHERE status = 'FT' AND league_id = :league_id
+        WHERE {_FINISHED_SQL} AND league_id = :league_id
         """
     )
     df = pd.read_sql(q, get_engine(), params={"league_id": league_id})
@@ -171,7 +174,7 @@ def get_last_refresh_timestamp(league_id: int):
     Returns the most recent match_date (finished only) for a competition
     to show the user how 'fresh' the underlying model data is.
     """
-    q = text("SELECT MAX(match_date) FROM matches WHERE status = 'FT' AND league_id = :lid")
+    q = text(f"SELECT MAX(match_date) FROM matches WHERE {_FINISHED_SQL} AND league_id = :lid")
     with get_engine().connect() as conn:
         res = conn.execute(q, {"lid": league_id}).scalar()
     return res

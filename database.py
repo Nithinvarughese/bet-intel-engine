@@ -46,6 +46,11 @@ def _get_engine():
     return _engine
 
 
+def get_engine():
+    """Shared SQLAlchemy engine; lazy so Streamlit Cloud can read `st.secrets` after imports finish."""
+    return _get_engine()
+
+
 def __getattr__(name: str):
     if name == "engine":
         return _get_engine()

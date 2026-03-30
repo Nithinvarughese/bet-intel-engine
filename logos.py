@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 import pandas as pd
 
-from database import engine
+from database import get_engine
 
 
 def league_logo_url(league_id: int) -> str:
@@ -65,7 +65,7 @@ def build_team_logo_map(league_id: int) -> dict[str, int]:
         """
     )
     try:
-        df = pd.read_sql(q, engine, params={"lid": league_id})
+        df = pd.read_sql(q, get_engine(), params={"lid": league_id})
     except Exception:
         return {}
     if df.empty:

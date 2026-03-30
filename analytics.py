@@ -2,12 +2,12 @@ import numpy as np
 import pandas as pd
 from sqlalchemy import text
 
-from database import engine
+from database import get_engine
 from scipy.stats import poisson
 
 
 def get_league_averages():
-    df = pd.read_sql(text("SELECT * FROM matches WHERE status = 'FT'"), engine)
+    df = pd.read_sql(text("SELECT * FROM matches WHERE status = 'FT'"), get_engine())
 
     avg_home_goals = df["home_goals"].mean()
     avg_away_goals = df["away_goals"].mean()
@@ -79,7 +79,7 @@ def get_team_form(team_name: str, league_id: int, limit: int = 5):
         """
     )
     df = pd.read_sql(
-        q, engine, params={"team": team_name, "league_id": league_id, "limit": limit}
+        q, get_engine(), params={"team": team_name, "league_id": league_id, "limit": limit}
     )
 
     form = []
@@ -118,7 +118,7 @@ def get_h2h_matches(team_a: str, team_b: str, league_id: int, limit: int = 5):
     )
     return pd.read_sql(
         q,
-        engine,
+        get_engine(),
         params={"a": team_a, "b": team_b, "league_id": league_id, "limit": limit},
     )
 
@@ -130,7 +130,7 @@ def get_league_averages_full(league_id: int = 39):
         WHERE status = 'FT' AND league_id = :league_id
         """
     )
-    df = pd.read_sql(q, engine, params={"league_id": league_id})
+    df = pd.read_sql(q, get_engine(), params={"league_id": league_id})
 
     if df.empty:
         empty_series = pd.Series(dtype=float)
@@ -172,7 +172,7 @@ def get_last_refresh_timestamp(league_id: int):
     to show the user how 'fresh' the underlying model data is.
     """
     q = text("SELECT MAX(match_date) FROM matches WHERE status = 'FT' AND league_id = :lid")
-    with engine.connect() as conn:
+    with get_engine().connect() as conn:
         res = conn.execute(q, {"lid": league_id}).scalar()
     return res
 

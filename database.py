@@ -13,25 +13,114 @@ import models  # noqa: F401 — registers MatchModel on Base.metadata
 _engine = None
 _SessionLocal = None
 
+# Env keys some hosts / docs use instead of DATABASE_URL
+_ENV_URL_KEYS = (
+    "DATABASE_URL",
+    "POSTGRES_URL",
+    "SQLALCHEMY_DATABASE_URI",
+    "PGURL",
+    "NEON_DATABASE_URL",
+)
 
-def _resolve_database_url() -> str:
-    """Prefer `.env` / OS env; on Streamlit Cloud, `st.secrets` is ready only after import (lazy access)."""
-    u = (os.environ.get("DATABASE_URL") or "").strip()
-    if u:
-        return u
+
+def _looks_like_postgres_url(v: str) -> bool:
+    x = (v or "").strip().lower()
+    return x.startswith(("postgresql://", "postgres://", "postgresql+"))
+
+
+def _first_env_database_url() -> str | None:
+    for key in _ENV_URL_KEYS:
+        v = (os.environ.get(key) or "").strip()
+        if v and _looks_like_postgres_url(v):
+            return v
+    return None
+
+
+def _walk_secret_values(obj, depth: int = 0):
+    """Yield string leaves from nested TOML (Streamlit sections, lists, etc.)."""
+    if depth > 14:
+        return
+    if isinstance(obj, str):
+        yield obj
+        return
+    if isinstance(obj, (int, float, bool)) or obj is None:
+        return
+    if isinstance(obj, dict):
+        for v in obj.values():
+            yield from _walk_secret_values(v, depth + 1)
+        return
+    if isinstance(obj, (list, tuple)):
+        for v in obj:
+            yield from _walk_secret_values(v, depth + 1)
+        return
+    if hasattr(obj, "keys") and callable(obj.keys) and hasattr(obj, "__getitem__"):
+        try:
+            for k in obj.keys():
+                try:
+                    yield from _walk_secret_values(obj[k], depth + 1)
+                except (KeyError, TypeError):
+                    continue
+        except Exception:
+            return
+
+
+def _database_url_from_streamlit_secrets() -> str | None:
+    """Cloud UI secrets are TOML: root keys often mirror env; nested sections only live under st.secrets."""
     try:
         import streamlit as st
-
-        if hasattr(st, "secrets") and "DATABASE_URL" in st.secrets:
-            s = str(st.secrets["DATABASE_URL"]).strip()
-            if s:
-                os.environ["DATABASE_URL"] = s
-                return s
+    except ImportError:
+        return None
+    try:
+        sec = st.secrets
     except Exception:
-        pass
+        return None
+
+    # Explicit keys / nested shapes users often paste from provider docs
+    _candidates = (
+        ("DATABASE_URL",),
+        ("database_url",),
+        ("database", "url"),
+        ("db", "url"),
+        ("postgres", "url"),
+        ("connections", "postgresql", "url"),
+        ("connections", "postgresql", "database_url"),
+    )
+    for path in _candidates:
+        try:
+            cur = sec
+            for p in path:
+                cur = cur[p]
+            s = str(cur).strip()
+            if _looks_like_postgres_url(s):
+                return s
+        except (KeyError, TypeError):
+            continue
+
+    for s in _walk_secret_values(sec):
+        t = (s or "").strip()
+        if _looks_like_postgres_url(t):
+            return t
+    return None
+
+
+def _resolve_database_url() -> str:
+    """`.env` / OS env first, then Streamlit secrets (any nesting that contains a postgres URL)."""
+    u = _first_env_database_url()
+    if u:
+        os.environ.setdefault("DATABASE_URL", u)
+        return u
+
+    u = _database_url_from_streamlit_secrets()
+    if u:
+        os.environ["DATABASE_URL"] = u
+        return u
+
     raise RuntimeError(
-        "DATABASE_URL is not set. For local dev: copy `.env.example` to `.env`. "
-        "For Streamlit Cloud: set DATABASE_URL in App secrets (see `.streamlit/secrets.toml.example`)."
+        "No PostgreSQL URL found. Local: set DATABASE_URL in `.env`. "
+        "Streamlit Cloud: App settings → Secrets → TOML with a root line like "
+        '`DATABASE_URL = "postgresql://..."` '
+        "or nest under `[database]` as `url = \"postgresql://...\"` "
+        "(see `.streamlit/secrets.toml.example`)."
     )
 
 

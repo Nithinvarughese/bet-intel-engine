@@ -34,7 +34,7 @@ def fetch_image_bytes(url: str, timeout: float = 25.0) -> bytes | None:
         r = requests.get(
             url,
             timeout=timeout,
-            headers={"User-Agent": "BetIntel/1.0 (Streamlit)"},
+            headers={"User-Agent": "PitchMetrics/1.0 (Streamlit)"},
         )
         if r.status_code == 200 and len(r.content) > 100:
             return r.content

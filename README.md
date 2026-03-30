@@ -1,4 +1,4 @@
-# Bet Intel
+# Pitch Metrics
 
 A small **football analytics demo** that estimates **1X2 probabilities** (home win / draw / away win) from historical results using a **Poisson scoreline model**, with a **Streamlit** dashboard and **PostgreSQL** storage.
 

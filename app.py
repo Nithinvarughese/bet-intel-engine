@@ -26,7 +26,7 @@ LEAGUE_BY_LABEL = {
 }
 
 st.set_page_config(
-    page_title="Bet Intel | Football analytics demo",
+    page_title="Pitch Metrics | Football analytics",
     page_icon="⚽",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -516,7 +516,7 @@ app_mode = st.sidebar.radio(
 )
 
 st.sidebar.divider()
-st.sidebar.caption("Bet Intel Engine v2.1")
+st.sidebar.caption("Pitch Metrics v2.1")
 
 # --- NEW: Max Width Wrapper ---
 st.markdown('<div class="main-app-container">', unsafe_allow_html=True)
@@ -544,8 +544,8 @@ teams = sorted(h_att.index.tolist())
 # --- NEW: Hero Header ---
 st.markdown(f'''
     <div class="hero-container">
-        <div class="hero-title">BET INTEL</div>
-        <div class="hero-subtitle">PREDICTIVE FOOTBALL ENGINE</div>
+        <div class="hero-title">Pitch Metrics</div>
+        <div class="hero-subtitle">Match &amp; league analytics</div>
         <div class="hero-rule"></div>
     </div>
 ''', unsafe_allow_html=True)
@@ -886,5 +886,5 @@ with col_main:
         st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
-st.caption("Bet Intel Engine 2.1 • Slate & Cyan Design System")
+st.caption("Pitch Metrics 2.1 • Slate & Cyan design system")
 st.markdown('</div>', unsafe_allow_html=True) # End main-app-container

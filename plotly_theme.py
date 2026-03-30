@@ -1,4 +1,4 @@
-# Plotly Theme Configuration for Bet Intel — Indigo & Gold palette
+# Plotly theme configuration for Pitch Metrics — indigo & gold palette
 
 TOKENS = {
     "bg_deep": "#080612",
@@ -36,6 +36,6 @@ def get_base_layout():
 
 
 def apply_theme(fig):
-    """Applies the Bet Intel Indigo & Gold theme to an existing Plotly Figure."""
+    """Applies the Pitch Metrics indigo & gold theme to an existing Plotly Figure."""
     fig.update_layout(**get_base_layout())
     return fig

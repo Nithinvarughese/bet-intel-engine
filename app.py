@@ -1,6 +1,24 @@
 import base64
 import html
+import os
+from urllib.parse import urlencode
+
 import streamlit as st
+
+
+def _streamlit_cloud_database_url() -> None:
+    """Map Streamlit Cloud Secrets → os.environ before any module imports `database`."""
+    if (os.environ.get("DATABASE_URL") or "").strip():
+        return
+    try:
+        if "DATABASE_URL" in st.secrets:
+            os.environ["DATABASE_URL"] = str(st.secrets["DATABASE_URL"]).strip()
+    except Exception:
+        pass
+
+
+_streamlit_cloud_database_url()
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -34,14 +52,66 @@ NAV_MODES = (
 )
 
 
-def _nav_segment_label(option: str) -> str:
-    """Shorter dock labels; return value from widget stays the full NAV_MODES string."""
-    return {
-        "🏟️ Match Predictor": "Match lab",
-        "📊 League Insights": "League",
-        "🔮 Season Simulator": "Season",
-        "💰 Bet Portfolio": "Portfolio",
-    }.get(option, option)
+def _parse_app_mode_from_query() -> str:
+    raw = st.query_params.get("nav")
+    if isinstance(raw, list):
+        raw = raw[0] if raw else ""
+    else:
+        raw = raw or ""
+    return raw if raw in NAV_MODES else NAV_MODES[0]
+
+
+NAV_SHORT_LABEL = {
+    "🏟️ Match Predictor": "Match",
+    "📊 League Insights": "League",
+    "🔮 Season Simulator": "Season",
+    "💰 Bet Portfolio": "Portfolio",
+}
+
+
+def _render_nav_html(league_label: str, app_mode: str) -> str:
+    """Premium HTML/CSS top navigation (desktop rail). Mobile menu left for you to add later."""
+    links_html = ""
+    active_index = 0
+    for i, mode in enumerate(NAV_MODES):
+        if app_mode == mode:
+            active_index = i
+        qs = urlencode({"nav": mode})
+        label = html.escape(NAV_SHORT_LABEL.get(mode, mode))
+        active_class = " pm-nav-link--active" if app_mode == mode else ""
+        # We add a custom property for staggered animations
+        links_html += (
+            f'<a class="pm-nav-link{active_class}" href="?{qs}" target="_self" style="--i: {i};">{label}</a>'
+        )
+
+    indicator_style = f"transform: translateX({active_index * 100}%);"
+
+    return f"""
+<div class="pm-nav-container">
+    <div class="pm-nav-desktop">
+        <div class="pm-nav-brand-group">
+            <a class="pm-nav-brand" href="?" target="_self">Pitch Metrics</a>
+            <span class="pm-nav-league-tag">{html.escape(league_label)}</span>
+        </div>
+        <nav class="pm-nav-rail" aria-label="Main sections">
+            <div class="pm-nav-links-wrap">
+                <div class="pm-nav-sliding-bg" style="{indicator_style}"></div>
+                {links_html}
+            </div>
+        </nav>
+        <div class="pm-nav-status">
+            <span class="pm-status-dot"></span>
+            <span class="pm-status-text">Live Intel</span>
+        </div>
+    </div>
+</div>
+"""
+
+
+def render_top_navigation(league_label: str, app_mode: str) -> None:
+    """Renders the top nav bar (HTML links + ?nav= query params)."""
+    st.markdown(_render_nav_html(league_label, app_mode), unsafe_allow_html=True)
+
 
 st.set_page_config(
     page_title="Pitch Metrics | Football analytics",
@@ -53,7 +123,7 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700;900&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap');
 
     :root {
         --surface-0: #080612;
@@ -76,11 +146,11 @@ st.markdown(
     .main-app-container {
         max-width: var(--max-width);
         margin: 0 auto;
-        padding: 0 24px;
+        padding: 24px 24px 24px 24px;
     }
 
     html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Inter', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         color: var(--text-muted);
     }
     h1, h2, h3, h4, h5, h6, .team-name, .prob-val, .hero-title {
@@ -131,73 +201,169 @@ st.markdown(
         border-radius: 2px;
     }
 
-    /* Top nav — glass pill dock (segmented control) */
-    div[data-testid="stSegmentedControl"] {
-        width: 100%;
-        max-width: 820px;
-        margin: 16px auto 32px auto;
-        padding: 0;
-    }
-    div[data-testid="stSegmentedControl"] [data-baseweb="segmented-control"] {
-        width: 100% !important;
-        background: linear-gradient(
-            155deg,
-            rgba(32, 22, 58, 0.55) 0%,
-            rgba(12, 8, 28, 0.72) 100%
-        ) !important;
-        backdrop-filter: blur(20px) saturate(180%) !important;
-        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-        border: 1px solid rgba(167, 139, 250, 0.22) !important;
-        border-radius: 999px !important;
-        padding: 5px !important;
-        box-shadow:
-            0 8px 32px rgba(0, 0, 0, 0.5),
-            0 0 0 1px rgba(0, 0, 0, 0.35) inset,
-            0 1px 0 rgba(255, 255, 255, 0.07) inset !important;
-    }
-    div[data-testid="stSegmentedControl"] [role="tablist"],
-    div[data-testid="stSegmentedControl"] [data-baseweb="segmented-control"] > div:first-child {
-        width: 100% !important;
-        display: flex !important;
-        align-items: stretch !important;
-        gap: 4px !important;
-    }
-    div[data-testid="stSegmentedControl"] button {
-        font-family: 'Outfit', sans-serif !important;
-        font-weight: 600 !important;
-        font-size: 0.8125rem !important;
-        letter-spacing: 0.06em !important;
-        text-transform: uppercase !important;
-        color: var(--text-dim) !important;
+    /* ── Pitch Metrics Premium Navigation ── */
+    [data-testid="stVerticalBlockBorderWrapper"]:has(.pm-nav-container) {
         background: transparent !important;
         border: none !important;
-        border-radius: 999px !important;
-        margin: 0 !important;
-        min-height: 44px !important;
-        padding: 0 0.85rem !important;
-        flex: 1 1 0 !important;
-        transition: color 0.2s ease, background 0.2s ease, box-shadow 0.25s ease, transform 0.15s ease !important;
+        padding: 0 !important;
+        margin-bottom: 2rem !important;
     }
-    div[data-testid="stSegmentedControl"] button:hover {
-        color: var(--text-primary) !important;
-        background: rgba(255, 255, 255, 0.07) !important;
+
+    .pm-nav-container {
+        width: 100%;
+        font-family: 'Inter', system-ui, sans-serif;
     }
-    div[data-testid="stSegmentedControl"] button:focus-visible {
-        outline: 2px solid var(--accent2) !important;
-        outline-offset: 2px !important;
+
+    /* Desktop Navigation */
+    .pm-nav-desktop {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 28px;
+        background: rgba(10, 8, 22, 0.65);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 100px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
     }
-    div[data-testid="stSegmentedControl"] button[aria-selected="true"],
-    div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
-        color: #0c0818 !important;
-        background: linear-gradient(135deg, #f0e7ff 0%, #fde68a 48%, #f59e0b 100%) !important;
-        box-shadow:
-            0 4px 20px rgba(245, 158, 11, 0.28),
-            0 0 28px rgba(167, 139, 250, 0.18) !important;
-        font-weight: 800 !important;
+
+    .pm-nav-brand-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
-    @media (prefers-reduced-motion: reduce) {
-        div[data-testid="stSegmentedControl"] button {
-            transition: none !important;
+
+    .pm-nav-brand {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        letter-spacing: -0.02em;
+        color: #fff;
+        text-decoration: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .pm-nav-brand:hover { opacity: 0.8; }
+
+    .pm-nav-league-tag {
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--accent);
+        background: rgba(245, 158, 11, 0.1);
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .pm-nav-rail {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        margin: 0 40px;
+    }
+
+    .pm-nav-links-wrap {
+        display: flex;
+        position: relative;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 4px;
+        border-radius: 100px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .pm-nav-link {
+        position: relative;
+        z-index: 2;
+        padding: 8px 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        color: rgba(212, 190, 255, 0.5);
+        text-decoration: none;
+        transition: color 0.3s ease;
+        min-width: 100px;
+        text-align: center;
+    }
+
+    .pm-nav-link:hover { color: #fff; }
+    .pm-nav-link--active { color: #fff; }
+
+    .pm-nav-sliding-bg {
+        position: absolute;
+        top: 4px; left: 4px;
+        height: calc(100% - 8px);
+        width: calc(25% - 2px); /* 4 items -> each 25% */
+        background: linear-gradient(135deg, rgba(167, 139, 250, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%);
+        border: 1px solid rgba(167, 139, 250, 0.25);
+        border-radius: 100px;
+        z-index: 1;
+        transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .pm-nav-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(196, 181, 253, 0.4);
+    }
+
+    .pm-status-dot {
+        width: 6px; height: 6px;
+        background: #10b981;
+        border-radius: 50%;
+        box-shadow: 0 0 10px #10b981;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(1.1); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Narrow viewports: keep desktop rail (no hamburger — add your own mobile nav later) */
+    @media (max-width: 1000px) {
+        .pm-nav-desktop {
+            flex-wrap: wrap;
+            row-gap: 14px;
+            border-radius: 24px;
+            padding: 14px 18px;
+            justify-content: center;
+        }
+        .pm-nav-brand-group {
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .pm-nav-rail {
+            flex: 1 1 100%;
+            margin: 0;
+            justify-content: center;
+        }
+        .pm-nav-links-wrap {
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 100%;
+        }
+        .pm-nav-link {
+            min-width: 72px;
+            padding: 8px 14px;
+        }
+        .pm-nav-sliding-bg {
+            display: none;
+        }
+        .pm-nav-status {
+            width: 100%;
+            justify-content: center;
         }
     }
 
@@ -608,6 +774,9 @@ elif st.session_state["current_league_id"] != selected_league_id:
     if "match_pred" in st.session_state:
         del st.session_state["match_pred"]
 
+app_mode = _parse_app_mode_from_query()
+render_top_navigation(league_label, app_mode)
+
 avg_h, avg_a, h_att, h_def, a_att, a_def = load_league(selected_league_id)
 
 if h_att.empty:
@@ -619,7 +788,7 @@ if h_att.empty:
 
 teams = sorted(h_att.index.tolist())
 
-# --- NEW: Hero Header ---
+# ——— Hero Header (below nav) ———
 st.markdown(f'''
     <div class="hero-container">
         <div class="hero-title">Pitch Metrics</div>
@@ -628,7 +797,7 @@ st.markdown(f'''
     </div>
 ''', unsafe_allow_html=True)
 
-# --- NEW: Sticky Subheader ---
+# ——— Info bar below hero ———
 last_update = get_last_refresh_timestamp(selected_league_id)
 update_str = last_update.strftime("%b %d, %Y") if last_update else "No data"
 st.markdown(f'''
@@ -643,16 +812,6 @@ st.markdown(f'''
         </div>
     </div>
 ''', unsafe_allow_html=True)
-
-app_mode = st.segmented_control(
-    "Section",
-    options=list(NAV_MODES),
-    default=NAV_MODES[0],
-    format_func=_nav_segment_label,
-    key="pitch_top_nav",
-    label_visibility="collapsed",
-    width="stretch",
-)
 
 if "match_pred" not in st.session_state:
     default_home = teams[0] if len(teams) > 0 else "Home"
@@ -823,14 +982,55 @@ col_ctrl, col_main = st.columns([1, 2.5], gap="large")
 
 with col_ctrl:
     st.markdown('<div class="control-panel">', unsafe_allow_html=True)
-    st.subheader("Match Selection")
-    h_team = st.selectbox("Home", teams, index=team_index(teams, st.session_state["match_pred"]["home"]), key="ctrl_home")
-    a_team = st.selectbox("Away", teams, index=team_index(teams, st.session_state["match_pred"]["away"]), key="ctrl_away")
+    st.subheader("Who’s playing?")
+    h_team = st.selectbox(
+        "Home team (hosts the match)",
+        teams,
+        index=team_index(teams, st.session_state["match_pred"]["home"]),
+        key="ctrl_home",
+        help="The club playing in their own stadium for this fixture.",
+    )
+    a_team = st.selectbox(
+        "Away team (visitors)",
+        teams,
+        index=team_index(teams, st.session_state["match_pred"]["away"]),
+        key="ctrl_away",
+    )
     
     st.divider()
-    st.subheader("Conditions")
-    h_adj = st.slider("Home Attack (%)", -50, 50, 0, 5, help="Adjust for injuries/morale")
-    a_adj = st.slider("Away Defense (%)", -50, 50, 0, 5)
+    st.subheader("Anything unusual today?")
+    st.caption(
+        "Optional. Leave both at **0** if you just want a baseline from season data. "
+        "Use the sliders only when something would make goals **more or less likely than usual**."
+    )
+    h_adj = st.slider(
+        "Home team — how strong is their attack **today**?",
+        -50,
+        50,
+        0,
+        5,
+        key="ctrl_h_adj",
+        help=(
+            "**Lower** = they look **less likely to score** than their usual level "
+            "(e.g. key forwards injured/suspended, very poor recent form). "
+            "**Higher** = **more likely to score** than usual (full squad, strong scoring run). "
+            "**0** = use their normal attacking strength from the data."
+        ),
+    )
+    a_adj = st.slider(
+        "Away team — how hard are they to score against **today**?",
+        -50,
+        50,
+        0,
+        5,
+        key="ctrl_a_adj",
+        help=(
+            "This is about the **visitors’ defending**, from the home team’s point of view. "
+            "**Lower** = **tougher to break down** than usual (fit back line, very defensive setup). "
+            "**Higher** = **easier to score on** than usual (defensive injuries, fatigue, open game). "
+            "**0** = use their normal defensive record from the data."
+        ),
+    )
     
     st.markdown("<br>", unsafe_allow_html=True)
     run_btn = st.button("RUN SIMULATION", type="primary", use_container_width=True)

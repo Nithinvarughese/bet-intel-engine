@@ -25,6 +25,24 @@ LEAGUE_BY_LABEL = {
     "Ligue 1": 61,
 }
 
+# Main-area navigation (order must match existing `app_mode` branches below)
+NAV_MODES = (
+    "🏟️ Match Predictor",
+    "📊 League Insights",
+    "🔮 Season Simulator",
+    "💰 Bet Portfolio",
+)
+
+
+def _nav_segment_label(option: str) -> str:
+    """Shorter dock labels; return value from widget stays the full NAV_MODES string."""
+    return {
+        "🏟️ Match Predictor": "Match lab",
+        "📊 League Insights": "League",
+        "🔮 Season Simulator": "Season",
+        "💰 Bet Portfolio": "Portfolio",
+    }.get(option, option)
+
 st.set_page_config(
     page_title="Pitch Metrics | Football analytics",
     page_icon="⚽",
@@ -111,6 +129,76 @@ st.markdown(
         background: var(--accent);
         margin: 16px auto 0 auto;
         border-radius: 2px;
+    }
+
+    /* Top nav — glass pill dock (segmented control) */
+    div[data-testid="stSegmentedControl"] {
+        width: 100%;
+        max-width: 820px;
+        margin: 16px auto 32px auto;
+        padding: 0;
+    }
+    div[data-testid="stSegmentedControl"] [data-baseweb="segmented-control"] {
+        width: 100% !important;
+        background: linear-gradient(
+            155deg,
+            rgba(32, 22, 58, 0.55) 0%,
+            rgba(12, 8, 28, 0.72) 100%
+        ) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border: 1px solid rgba(167, 139, 250, 0.22) !important;
+        border-radius: 999px !important;
+        padding: 5px !important;
+        box-shadow:
+            0 8px 32px rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+            0 1px 0 rgba(255, 255, 255, 0.07) inset !important;
+    }
+    div[data-testid="stSegmentedControl"] [role="tablist"],
+    div[data-testid="stSegmentedControl"] [data-baseweb="segmented-control"] > div:first-child {
+        width: 100% !important;
+        display: flex !important;
+        align-items: stretch !important;
+        gap: 4px !important;
+    }
+    div[data-testid="stSegmentedControl"] button {
+        font-family: 'Outfit', sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 0.8125rem !important;
+        letter-spacing: 0.06em !important;
+        text-transform: uppercase !important;
+        color: var(--text-dim) !important;
+        background: transparent !important;
+        border: none !important;
+        border-radius: 999px !important;
+        margin: 0 !important;
+        min-height: 44px !important;
+        padding: 0 0.85rem !important;
+        flex: 1 1 0 !important;
+        transition: color 0.2s ease, background 0.2s ease, box-shadow 0.25s ease, transform 0.15s ease !important;
+    }
+    div[data-testid="stSegmentedControl"] button:hover {
+        color: var(--text-primary) !important;
+        background: rgba(255, 255, 255, 0.07) !important;
+    }
+    div[data-testid="stSegmentedControl"] button:focus-visible {
+        outline: 2px solid var(--accent2) !important;
+        outline-offset: 2px !important;
+    }
+    div[data-testid="stSegmentedControl"] button[aria-selected="true"],
+    div[data-testid="stSegmentedControl"] button[aria-checked="true"] {
+        color: #0c0818 !important;
+        background: linear-gradient(135deg, #f0e7ff 0%, #fde68a 48%, #f59e0b 100%) !important;
+        box-shadow:
+            0 4px 20px rgba(245, 158, 11, 0.28),
+            0 0 28px rgba(167, 139, 250, 0.18) !important;
+        font-weight: 800 !important;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        div[data-testid="stSegmentedControl"] button {
+            transition: none !important;
+        }
     }
 
     /* Elevation System */
@@ -505,16 +593,6 @@ with _sb_c:
         )
 st.sidebar.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-st.sidebar.markdown(
-    '<h3 style="color: #cbd5e1; font-weight: 700; font-size:14px; margin-bottom:10px; letter-spacing:1px;">NAVIGATION</h3>',
-    unsafe_allow_html=True,
-)
-app_mode = st.sidebar.radio(
-    "",
-    ["🏟️ Match Predictor", "📊 League Insights", "🔮 Season Simulator", "💰 Bet Portfolio"],
-    label_visibility="collapsed",
-)
-
 st.sidebar.divider()
 st.sidebar.caption("Pitch Metrics v2.1")
 
@@ -566,6 +644,15 @@ st.markdown(f'''
     </div>
 ''', unsafe_allow_html=True)
 
+app_mode = st.segmented_control(
+    "Section",
+    options=list(NAV_MODES),
+    default=NAV_MODES[0],
+    format_func=_nav_segment_label,
+    key="pitch_top_nav",
+    label_visibility="collapsed",
+    width="stretch",
+)
 
 if "match_pred" not in st.session_state:
     default_home = teams[0] if len(teams) > 0 else "Home"
@@ -707,7 +794,7 @@ elif app_mode == "💰 Bet Portfolio":
     
     st.markdown('<div class="match-card">', unsafe_allow_html=True)
     if not st.session_state['portfolio']:
-        st.info("No bets placed yet. Navigate to the **🏟️ Match Predictor** and track some +EV bets!")
+        st.info("No bets saved yet. Open **🏟️ Match Predictor** (top) and add +EV picks to your ledger.")
     else:
         portfolio_df = pd.DataFrame(st.session_state['portfolio'])
         

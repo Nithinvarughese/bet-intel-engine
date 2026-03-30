@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -34,12 +35,22 @@ def api_headers():
 
 
 def _schema_payload(match_data: MatchSchema) -> dict:
-    if hasattr(match_data, "model_dump"):
-        return match_data.model_dump()
-    return match_data.dict()
+    return match_data.model_dump()
 
 
-def fetch_and_save_matches(league_id: int = 39, season: int = 2023):
+def _default_season_year() -> int:
+    """API-Football season = year the campaign starts (e.g. 2024 → 2024–25).
+
+    Free tier only allows seasons 2022–2024; cap so ingest works without a paid plan.
+    """
+    y, m = datetime.now().year, datetime.now().month
+    season_start = y if m >= 7 else y - 1
+    return min(season_start, 2024)
+
+
+def fetch_and_save_matches(league_id: int = 39, season: int | None = None):
+    if season is None:
+        season = _default_season_year()
     headers = api_headers()
     if not headers:
         print(
@@ -110,7 +121,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     LEAGUES_TO_FETCH = [39, 140, 135, 78, 61]
+    season = _default_season_year()
+    print(f"Using API-Football season={season}")
     for lid in LEAGUES_TO_FETCH:
         print(f"\n--- Fetching League ID {lid} ---")
-        fetch_and_save_matches(league_id=lid, season=2023)
+        fetch_and_save_matches(league_id=lid, season=season)
     print("\n🎉 All leagues synced to PostgreSQL (league_id stored on each row).")
